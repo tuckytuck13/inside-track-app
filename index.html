@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inside Track — Recruiter-Grade Resume Audit</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f0d;
+      --surface: #141410;
+      --border: #1e1e18;
+      --border2: #2a2a22;
+      --accent: #c8f04a;
+      --text: #e8e8e0;
+      --muted: #6a6a5a;
+      --dim: #4a4a3a;
+      --faint: #3a3a32;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 0.08em;
+      line-height: 1;
+    }
+    .logo-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--dim);
+      letter-spacing: 0.12em;
+      margin-top: 4px;
+    }
+    .badge {
+      background: var(--accent);
+      color: var(--bg);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 6px 12px;
+      letter-spacing: 0.1em;
+    }
+
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 40px 80px;
+    }
+
+    .hero-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(52px, 10vw, 96px);
+      line-height: 0.92;
+      letter-spacing: 0.02em;
+      margin-bottom: 24px;
+    }
+    .hero-title .accent { color: var(--accent); }
+    .hero-sub {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 480px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+    }
+
+    .field { margin-bottom: 24px; }
+    .field-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    select, textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 14px 16px;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    select { cursor: pointer; }
+    select option { background: var(--surface); color: var(--text); }
+    textarea {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+      min-height: 220px;
+    }
+    textarea::placeholder { color: var(--faint); }
+    select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+    /* TABS */
+    .input-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border2);
+      margin-bottom: 0;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 10px 20px 10px 0;
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn:nth-child(2) { margin-left: 20px; }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-panel { display: none; padding-top: 14px; }
+    .tab-panel.active { display: block; }
+
+    /* UPLOAD ZONE */
+    .upload-zone {
+      border: 1px dashed var(--border2);
+      background: var(--surface);
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      position: relative;
+    }
+    .upload-zone:hover { border-color: var(--accent); }
+    .upload-zone input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-icon { font-size: 32px; margin-bottom: 12px; }
+    .upload-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+    }
+    .upload-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--dim);
+      letter-spacing: 0.08em;
+    }
+    .upload-status {
+      margin-top: 14px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      display: none;
+    }
+    .upload-status.success { color: var(--accent); }
+    .upload-status.processing { color: var(--dim); }
+
+    /* BUTTON */
+    .btn-audit {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 18px 36px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      display: inline-block;
+    }
+    .btn-audit:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-audit:active { transform: translateY(0); }
+    .btn-audit:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .form-note {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--faint);
+      letter-spacing: 0.08em;
+      margin-top: 12px;
+    }
+
+    .error-msg {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: #ff5555;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    /* RESULTS */
+    .results-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .results-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 40px;
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+    .results-role {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+      margin-top: 6px;
+    }
+    .btn-back {
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      padding: 10px 20px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .btn-back:hover { border-color: var(--accent); color: var(--accent); }
+
+    .loading-wrap { padding: 40px 0; }
+    .loading-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+    .dots { display: flex; gap: 6px; align-items: center; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-8px); }
+    }
+
+    .audit-section {
+      margin-bottom: 32px;
+      border-left: 3px solid var(--accent);
+      padding-left: 20px;
+      animation: fadeUp 0.4s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .section-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .section-body {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--muted);
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .cta-card {
+      margin-top: 48px;
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .cta-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      margin-bottom: 8px;
+    }
+    .cta-body {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 20px; }
+      main { padding: 32px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo-name">INSIDE TRACK</div>
+    <div class="logo-sub">RECRUITER-GRADE RESUME AUDIT</div>
+  </div>
+  <div class="badge">BETA</div>
+</header>
+
+<main>
+
+  <!-- INTAKE -->
+  <div id="view-intake">
+    <div class="hero-title">
+      THE TRUTH<br>
+      <span class="accent">RECRUITERS</span><br>
+      NEVER TELL YOU
+    </div>
+    <p class="hero-sub">
+      Built by a recruiter who's seen thousands of resumes. No generic tips. No fluff. The real reason you're not getting callbacks.
+    </p>
+
+    <div class="field">
+      <div class="field-label">Target Role Type</div>
+      <select id="role-select">
+        <option value="" disabled selected>Select the type of role you're targeting...</option>
+        <option>Sales &amp; Business Development</option>
+        <option>Marketing &amp; Communications</option>
+        <option>Operations &amp; Project Management</option>
+        <option>HR &amp; People</option>
+        <option>Legal &amp; Compliance</option>
+        <option>Executive &amp; Leadership</option>
+        <option>Customer Success &amp; Account Management</option>
+        <option>Administrative &amp; Office</option>
+        <option>Finance &amp; Accounting</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Your Resume</div>
+      <div class="input-tabs">
+        <button class="tab-btn active" onclick="switchTab('paste')">Paste Text</button>
+        <button class="tab-btn" onclick="switchTab('upload')">Upload File</button>
+      </div>
+
+      <div id="tab-paste" class="tab-panel active">
+        <textarea id="resume-input" placeholder="Paste your full resume text here..."></textarea>
+      </div>
+
+      <div id="tab-upload" class="tab-panel">
+        <div class="upload-zone">
+          <input type="file" id="file-input" accept=".pdf,.docx" onchange="handleFile(this.files[0])" />
+          <div class="upload-icon">&#128196;</div>
+          <div class="upload-title">TAP TO UPLOAD YOUR RESUME</div>
+          <div class="upload-sub">PDF or Word (.docx) &mdash; max 5MB</div>
+          <div class="upload-status" id="upload-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <button class="btn-audit" id="btn-audit" onclick="runAudit()">GET MY AUDIT &rarr;</button>
+    <div class="form-note">No account needed. Results in ~30 seconds.</div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="view-results" style="display:none;">
+    <div class="results-header">
+      <div>
+        <div class="results-title">YOUR AUDIT</div>
+        <div class="results-role" id="results-role-label"></div>
+      </div>
+      <button class="btn-back" onclick="resetApp()">&larr; New Audit</button>
+    </div>
+
+    <div id="loading-state" class="loading-wrap" style="display:none;">
+      <div class="loading-label">RECRUITER IS REVIEWING YOUR RESUME...</div>
+      <div class="dots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+
+    <div id="audit-output"></div>
+
+    <div class="cta-card" id="cta-card" style="display:none;">
+      <div class="cta-label">WANT A REAL RECRUITER'S EYES ON THIS?</div>
+      <div class="cta-body">
+        This audit is AI-powered with real recruiter insight behind it. For a 1-on-1 review with the recruiter who built this tool, reach out directly.
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // Set PDF.js worker
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  let activeTab = 'paste';
+  let uploadedText = '';
+
+  const SECTION_HEADERS = [
+    "TENURE & JOB HISTORY FLAGS",
+    "RESUME FLUFF DETECTOR",
+    "KEYWORD & SKILLS AUDIT",
+    "SOCIAL MEDIA WARNING",
+    "FIRST IMPRESSION SCORE",
+    "TOP 3 CHANGES TO MAKE THIS WEEK",
+    "INTERVIEW REALITY CHECK",
+  ];
+
+  function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'paste') || (i === 1 && tab === 'upload'));
+    });
+    document.getElementById('tab-paste').classList.toggle('active', tab === 'paste');
+    document.getElementById('tab-upload').classList.toggle('active', tab === 'upload');
+    hideError();
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function hideError() {
+    const el = document.getElementById('error-msg');
+    el.style.display = 'none';
+  }
+
+  function setUploadStatus(msg, type) {
+    const el = document.getElementById('upload-status');
+    el.textContent = msg;
+    el.className = 'upload-status ' + (type || '');
+    el.style.display = msg ? 'block' : 'none';
+  }
+
+  async function handleFile(file) {
+    if (!file) return;
+    hideError();
+    uploadedText = '';
+
+    if (file.size > 5 * 1024 * 1024) {
+      showError('File too large. Max 5MB.');
+      return;
+    }
+
+    const name = file.name.toLowerCase();
+
+    try {
+      if (name.endsWith('.pdf')) {
+        setUploadStatus('Reading PDF...', 'processing');
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          fullText += content.items.map(item => item.str).join(' ') + '\n';
+        }
+        uploadedText = fullText.trim();
+        if (!uploadedText || uploadedText.length < 50) throw new Error('No readable text found in PDF');
+        setUploadStatus('✓ ' + file.name + ' ready', 'success');
+
+      } else if (name.endsWith('.docx')) {
+        setUploadStatus('Reading Word doc...', 'processing');
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        uploadedText = result.value.trim();
+        if (!uploadedText || uploadedText.length < 50) throw new Error('No readable text found in Word doc');
+        setUploadStatus('✓ ' + file.name + ' ready', 'success');
+
+      } else {
+        showError('Please upload a PDF or Word (.docx) file.');
+      }
+    } catch (err) {
+      uploadedText = '';
+      setUploadStatus('', '');
+      showError('Could not read that file. Make sure it\'s a standard PDF or Word document and try again.');
+      console.error(err);
+    }
+  }
+
+  function resetApp() {
+    document.getElementById('view-intake').style.display = 'block';
+    document.getElementById('view-results').style.display = 'none';
+    document.getElementById('audit-output').innerHTML = '';
+    document.getElementById('cta-card').style.display = 'none';
+    document.getElementById('resume-input').value = '';
+    document.getElementById('role-select').value = '';
+    document.getElementById('file-input').value = '';
+    document.getElementById('btn-audit').disabled = false;
+    uploadedText = '';
+    setUploadStatus('', '');
+    switchTab('paste');
+    hideError();
+  }
+
+  function parseAndRender(text) {
+    const output = document.getElementById('audit-output');
+    output.innerHTML = '';
+    let sections = [];
+    let remaining = text;
+
+    for (let i = 0; i < SECTION_HEADERS.length; i++) {
+      const header = SECTION_HEADERS[i];
+      const next = SECTION_HEADERS[i + 1];
+      const startIdx = remaining.toLowerCase().indexOf(header.toLowerCase());
+      if (startIdx === -1) continue;
+      const afterHeader = remaining.slice(startIdx + header.length);
+      const endIdx = next ? afterHeader.toLowerCase().indexOf(next.toLowerCase()) : afterHeader.length;
+      const content = afterHeader.slice(0, endIdx !== -1 ? endIdx : undefined)
+        .trim().replace(/^[\s\n\r:.—–-]+/, '');
+      if (content) sections.push({ title: header, content });
+      if (next && endIdx !== -1) remaining = afterHeader.slice(endIdx);
+    }
+
+    if (sections.length === 0) sections = [{ title: 'AUDIT RESULTS', content: text }];
+
+    sections.forEach((s, i) => {
+      const div = document.createElement('div');
+      div.className = 'audit-section';
+      div.style.animationDelay = i * 0.08 + 's';
+      div.innerHTML = `<div class="section-title">${s.title}</div><div class="section-body">${escHtml(s.content)}</div>`;
+      output.appendChild(div);
+    });
+
+    document.getElementById('cta-card').style.display = 'block';
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function runAudit() {
+    const role = document.getElementById('role-select').value;
+    const pastedText = document.getElementById('resume-input').value.trim();
+    const resume = activeTab === 'upload' ? uploadedText : pastedText;
+
+    hideError();
+
+    if (!role) { showError('Please select a role type.'); return; }
+    if (!resume) {
+      showError(activeTab === 'upload' ? 'Please upload your resume file above.' : 'Please paste your resume text.');
+      return;
+    }
+    if (resume.length < 100) { showError('Resume looks too short. Make sure the full text is included.'); return; }
+
+    document.getElementById('btn-audit').disabled = true;
+    document.getElementById('view-intake').style.display = 'none';
+    document.getElementById('view-results').style.display = 'block';
+    document.getElementById('results-role-label').textContent = role.toUpperCase();
+    document.getElementById('loading-state').style.display = 'block';
+    document.getElementById('audit-output').innerHTML = '';
+    document.getElementById('cta-card').style.display = 'none';
+
+    try {
+      const response = await fetch('/.netlify/functions/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeText: resume, role }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || 'Server error');
+
+      document.getElementById('loading-state').style.display = 'none';
+      parseAndRender(data.result);
+
+    } catch (err) {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('view-results').style.display = 'none';
+      document.getElementById('view-intake').style.display = 'block';
+      document.getElementById('btn-audit').disabled = false;
+      showError('Something went wrong: ' + err.message + '. Please try again.');
+    }
+  }
+</script>
+
+</body>
+</html>
